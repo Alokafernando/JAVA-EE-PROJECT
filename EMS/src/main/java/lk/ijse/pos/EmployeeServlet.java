@@ -80,6 +80,7 @@ public class EmployeeServlet extends HttpServlet {
             PreparedStatement pstm=
                     connection.prepareStatement("INSERT INTO employee" +
                             "(eid,ename,eaddress,eemail) Values (?,?,?,?)");
+
             pstm.setString(1, UUID.randomUUID().toString());
             pstm.setString(2, employee.get("ename"));
             pstm.setString(3,employee.get("eaddress"));
@@ -120,6 +121,53 @@ public class EmployeeServlet extends HttpServlet {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        ///make doput and do delete
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String,String> employee = mapper.readValue(req.getInputStream(), Map.class);
+
+        ServletContext sc = req.getServletContext();
+        BasicDataSource dataSource= (BasicDataSource) sc.getAttribute("dataSource");
+
+        try {
+            Connection connection=dataSource.getConnection();
+            PreparedStatement pstm = connection.prepareStatement(
+                    "update employee set ename=?,eaddress=?,eemail=? where eid=?"
+            );
+
+            pstm.setString(1, employee.get("ename"));
+            pstm.setString(2,employee.get("eaddress"));
+            pstm.setString(3,employee.get("eemail"));
+            pstm.setString(4, employee.get("eid"));
+
+            int executed = pstm.executeUpdate();
+            PrintWriter out=resp.getWriter();
+            if(executed>0){
+                resp.setStatus(HttpServletResponse.SC_CREATED);
+                mapper.writeValue(out,Map.of(
+                        "code","201",
+                        "status","success",
+                        "message","Employee updated successfully"
+                ));
+            }else{
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                mapper.writeValue(out,Map.of(
+                        "code","400",
+                        "status","error",
+                        "message","Bad Request"
+                ));
+            }
+
+        } catch (SQLException e) {
+            PrintWriter out=resp.getWriter();
+            resp.setContentType("application/json");
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            mapper.writeValue(out,Map.of(
+                    "code","500",
+                    "status","error",
+                    "message","Internal Server Error"
+            ));
+            throw new RuntimeException(e);
+        }
+
+
     }
 }
