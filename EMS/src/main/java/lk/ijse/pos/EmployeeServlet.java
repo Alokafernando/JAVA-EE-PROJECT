@@ -170,4 +170,54 @@ public class EmployeeServlet extends HttpServlet {
 
     }
 
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+
+        ObjectMapper mapper = new ObjectMapper();
+        String eid = req.getParameter("eid");
+
+        ServletContext sc = req.getServletContext();
+        BasicDataSource dataSource= (BasicDataSource) sc.getAttribute("dataSource");
+
+        try {
+            Connection connection = dataSource.getConnection();
+            PreparedStatement pstm = connection.prepareStatement("delete from employee where eid=?");
+
+            pstm.setString(1, eid);
+
+            int executed = pstm.executeUpdate();
+            PrintWriter out = resp.getWriter();
+            if(executed>0){
+                resp.setStatus(HttpServletResponse.SC_OK);
+                mapper.writeValue(out,Map.of(
+                        "code","201",
+                        "status","success",
+                        "message","Employee deleted successfully"
+                ));
+            }else{
+                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                mapper.writeValue(out,Map.of(
+                        "code","400",
+                        "status","error",
+                        "message","Bad Request"
+                ));
+            }
+        connection.close();
+        } catch (SQLException e) {
+            PrintWriter out = resp.getWriter();
+            resp.setContentType("application/json");
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            mapper.writeValue(out,Map.of(
+                    "code","500",
+                    "status","error",
+                    "message","Internal Server Error"
+            ));
+            throw new RuntimeException(e);
+        }
+
+
+
+
+    }
+
 }
