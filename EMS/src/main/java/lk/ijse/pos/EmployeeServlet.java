@@ -22,31 +22,46 @@ public class EmployeeServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        try {
-            ServletContext sc = req.getServletContext();
-            BasicDataSource dataSource = (BasicDataSource) sc.getAttribute("dataSource");
+        ObjectMapper mapper = new ObjectMapper();
+        resp.setContentType("application/json");
 
+        ServletContext sc = req.getServletContext();
+        BasicDataSource dataSource = (BasicDataSource) sc.getAttribute("dataSource");
+
+        try {
             Connection connection = dataSource.getConnection();
-            ResultSet rs = connection.createStatement().executeQuery("select * from employee");
+            PreparedStatement pstm = connection.prepareStatement("select * from employee");
+            ResultSet rs = pstm.executeQuery();
 
             List<Map<String, String>> employeeList = new ArrayList<>();
 
             while (rs.next()) {
 
-                Map<String, String> event = new HashMap<String, String>();
-                event.put("eid", rs.getString("eid"));
-                event.put("ename", rs.getString("ename"));
-                event.put("eaddress", rs.getString("eaddress"));
-                event.put("eemail", rs.getString("eemail"));
-                employeeList.add(event);
+                Map<String, String> emp = Map.of(
+                        "eid", rs.getString("eid"),
+                        "ename", rs.getString("ename"),
+                        "eaddrss", rs.getString("eaddress"),
+                        "eemail", rs.getString("eemail")
+                );
+                employeeList.add(emp);
+
             }
 
-            resp.setContentType("application/json");
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.writeValue(resp.getWriter(), employeeList);
+            PrintWriter out = resp.getWriter();
+            resp.setStatus(HttpServletResponse.SC_OK);
+            mapper.writeValue(out, Map.of(
+                    "code", "200",
+                    "status", "success",
+                    "data", employeeList
+            ));
 
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            mapper.writeValue(resp.getWriter(), Map.of(
+                    "code", "500",
+                    "status", "error",
+                    "message", "Internal server error!"
+            ));
         }
     }
 
