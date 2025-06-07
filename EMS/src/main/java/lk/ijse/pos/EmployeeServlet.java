@@ -54,7 +54,7 @@ public class EmployeeServlet extends HttpServlet {
                     "status", "success",
                     "data", employeeList
             ));
-
+        connection.close();
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             mapper.writeValue(resp.getWriter(), Map.of(
@@ -155,7 +155,7 @@ public class EmployeeServlet extends HttpServlet {
                         "message","Bad Request"
                 ));
             }
-
+            connection.close();
         } catch (SQLException e) {
             PrintWriter out=resp.getWriter();
             resp.setContentType("application/json");
@@ -168,6 +168,6 @@ public class EmployeeServlet extends HttpServlet {
             throw new RuntimeException(e);
         }
 
-
     }
+
 }
